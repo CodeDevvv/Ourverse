@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Video Chat App</title>
+    <link rel="stylesheet" href="style.css" />
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://kit.fontawesome.com/c939d0e917.js"></script>
+    <script src="https://unpkg.com/peerjs@1.3.1/dist/peerjs.min.js"></script>
+    <script>
+      const ROOM_ID = "<%= roomId %>";
+    </script>
+  </head>
+  <body>
+    <div id="nameModal" class="modal">
+      <div class="modal-content">
+        <h2>Enter Your Name</h2>
+        <input type="text" id="userNameInput" placeholder="" />
+        <button id="startCallButton">Start Call</button>
+      </div>
+    </div>
+
+    <div class="header">
+      <div class="logo">
+        <div class="header_back">
+          <i class="fas fa-angle-left"></i>
+        </div>
+        <h3>Welcome to OurVerse!</h3>
+      </div>
+    </div>  
+    <div class="main">  
+      <div class="main_left">
+        <div class="videos_group">
+          <div id="video-grid"></div>
+        </div>
+        <div class="options">
+          <div class="options_left">
+            <div id="stopVideo" class="options_button">
+              <i class="fa fa-video-camera"></i>
+            </div>
+            <div id="muteButton" class="options_button">
+              <i class="fa fa-microphone"></i>
+            </div>
+            <div id="disconnect" class="options_button background_red">
+              <i class="fa fa-phone"></i>
+            </div>
+          </div>
+          <div class="options_right">
+            <div id="inviteButton" class="options_button">
+              <i class="fas fa-user-plus"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <script src="script.js"></script>
+  </body>
+</html>

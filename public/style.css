@@ -1,0 +1,161 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap");
+
+:root {
+  --main-darklg: #3e3e42;
+  --main-dark: #252526;
+  --primary-color: #00B8A9;
+  --main-light: #eeeeee;
+  font-family: "Poppins", sans-serif;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+}
+
+.header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 8vh;
+  width: 100%;
+  background-color: var(--main-darklg);
+}
+
+.logo h3 {
+  color: var(--main-light);
+}
+
+.main {
+  height: 92vh;
+  display: flex;
+}
+
+.main_left {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.videos_group {
+  flex-grow: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 1rem;
+  background-color: var(--main-dark);
+}
+
+video {
+  height: 300px;
+  width: 400px;
+  border-radius: 1rem;
+  margin: 0.5rem;
+  object-fit: cover;
+  transform: rotateY(180deg);
+}
+
+.options {
+  padding: 1rem;
+  display: flex;
+  background-color: var(--main-darklg);
+}
+
+.options_left, .options_right {
+  display: flex;
+}
+
+.options_right {
+  margin-left: auto;
+}
+
+.options_button {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: var(--primary-color);
+  height: 50px;
+  width: 50px;
+  border-radius: 50px;
+  color: var(--main-light);
+  font-size: 1.2rem;
+  margin: 0 0.5rem;
+  cursor: pointer;
+}
+
+.options_button:hover {
+  cursor: pointer;
+}
+
+.background_red {
+  background-color: #f6484a;
+}
+
+.modal {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 9999; 
+}
+
+.modal-content {
+  background-color: white;
+  padding: 50px;
+  border-radius: 10px;
+  text-align: center;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+#userNameInput {
+  width: 80%;
+  padding: 10px;
+  margin: 10px 0;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+#startCallButton {
+  background-color: #eef103;
+  color: black;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+#startCallButton:hover {
+  background-color: #e7ff0c;
+}
+
+@media (max-width: 700px) {
+  .main_right {
+    display: none;
+  }
+  
+  .main_left {
+    width: 100%;
+  }
+
+  video {
+    width: 100%;
+    height: auto;
+  }
+  
+  .header_back {
+    display: block;
+    position: absolute;
+    top: 17px;
+    left: 28px;
+    color: #fff;
+  }
+
+  #showChat {
+    display: flex;
+  }
+}

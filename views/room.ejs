@@ -1,60 +1,88 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Video Chat App</title>
-    <link rel="stylesheet" href="style.css" />
-    <script src="/socket.io/socket.io.js"></script>
-    <script src="https://kit.fontawesome.com/c939d0e917.js"></script>
-    <script src="https://unpkg.com/peerjs@1.3.1/dist/peerjs.min.js"></script>
-    <script>
-      const ROOM_ID = "<%= roomId %>";
-    </script>
-  </head>
-  <body>
-    <div id="nameModal" class="modal">
-      <div class="modal-content">
-        <h2>Enter Your Name</h2>
-        <input type="text" id="userNameInput" placeholder="" />
-        <button id="startCallButton">Start Call</button>
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OurVerse</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+  <script src="https://unpkg.com/peerjs@1.3.1/dist/peerjs.min.js"></script>
+  <script src="https://kit.fontawesome.com/c939d0e917.js" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/picmo@latest/dist/umd/index.js"></script>
+  <script>
+    const ROOM_ID = "<%= roomId %>";
+    const ENCRYPT_KEY = "<%= secretKey %>";
+    const TURN_USER = "<%= turnUser %>";
+    const TURN_PASS = "<%= turnPass %>";
+  </script>
+</head>
+
+<body>
+
+  <div id="startModal" class="modal">
+    <div class="modal-content">
+      <h3>Ready?</h3>
+      <p style="color: #aaa; margin-bottom: 20px;">Click below to join the room</p>
+      <button id="startCallButton">Join Call</button>
+    </div>
+  </div>
+
+  <div id="inviteModal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <span id="closeInviteX" class="close-modal-x">&times;</span>
+      <h3>Invite Someone</h3>
+      <div class="link-container">
+        <input type="text" id="inviteUrl" readonly>
+        <button id="copyBtn"><i class="fas fa-copy"></i></button>
       </div>
+      <button id="closeInvite" style="margin-top:15px; background:#444; color:white; border:none; padding:8px 15px; border-radius:5px; cursor:pointer;">Close</button>
+    </div>
+  </div>
+
+  <div id="video-grid"></div>
+
+  <div class="options-bar">
+    <div id="stopVideo" class="control-btn">
+      <i class="fas fa-video"></i>
+    </div>
+    <div id="muteButton" class="control-btn">
+      <i class="fas fa-microphone"></i>
+    </div>
+    <div id="shareScreen" class="control-btn">
+      <i class="fas fa-desktop"></i>
+    </div>
+    <div id="disconnect" class="control-btn hangup-btn">
+      <i class="fas fa-phone-slash"></i>
+    </div>
+    <div id="inviteButton" class="control-btn">
+      <i class="fas fa-share-alt"></i>
+    </div>
+    <div id="toggleChat" class="control-btn">
+      <i class="fas fa-comment-alt"></i>
+    </div>
+  </div>
+
+  <div class="main_right" id="chatWindow" style="display: none;">
+    <div class="main_header">
+      <h6>Secure Chat</h6>
+      <div id="closeChat" style="cursor: pointer;"><i class="fas fa-times"></i></div>
     </div>
 
-    <div class="header">
-      <div class="logo">
-        <div class="header_back">
-          <i class="fas fa-angle-left"></i>
-        </div>
-        <h3>Welcome to OurVerse!</h3>
-      </div>
-    </div>  
-    <div class="main">  
-      <div class="main_left">
-        <div class="videos_group">
-          <div id="video-grid"></div>
-        </div>
-        <div class="options">
-          <div class="options_left">
-            <div id="stopVideo" class="options_button">
-              <i class="fa fa-video-camera"></i>
-            </div>
-            <div id="muteButton" class="options_button">
-              <i class="fa fa-microphone"></i>
-            </div>
-            <div id="disconnect" class="options_button background_red">
-              <i class="fa fa-phone"></i>
-            </div>
-          </div>
-          <div class="options_right">
-            <div id="inviteButton" class="options_button">
-              <i class="fas fa-user-plus"></i>
-            </div>
-          </div>
-        </div>
-      </div>
+    <div class="main_chat_window" id="mainChatWindow">
+      <ul class="messages" id="allMessages"></ul>
     </div>
-    
-    <script src="script.js"></script>
-  </body>
+
+    <div id="emojiPickerContainer" class="pickerContainer"></div>
+
+    <div class="main_message_container">
+      <button id="emojiBtn"><i class="far fa-smile"></i></button> <input id="chat_message" type="text" placeholder="Type message..." autocomplete="off">
+      <button id="sendMsgBtn"><i class="fas fa-paper-plane"></i></button>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+
 </html>

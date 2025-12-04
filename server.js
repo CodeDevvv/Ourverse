@@ -2,18 +2,29 @@ const express = require("express");
 const app = express();
 const server = require("http").Server(app);
 require("dotenv").config();
+const { v4: uuidv4 } = require("uuid");
+const { ExpressPeerServer } = require("peer");
 
 app.set("view engine", "ejs");
 app.use(express.static("public"));
-const { v4: uuidv4 } = require("uuid");
+
 const io = require("socket.io")(server, {
   cors: {
-    origin: "*",
+    origin: process.env.NODE_ENV === "production" ? "https://your-app-name.onrender.com" : "*",
+    methods: ["GET", "POST"]
   },
 });
-const { ExpressPeerServer } = require("peer");
+
+app.use((req, res, next) => {
+  if (process.env.NODE_ENV === 'production' && req.headers['x-forwarded-proto'] !== 'https') {
+    return res.redirect('https://' + req.headers.host + req.url);
+  }
+  next();
+});
+
 const peerServer = ExpressPeerServer(server, {
-  debug: true,
+  debug: false,
+  path: "/"
 });
 
 app.use("/peerjs", peerServer);
@@ -23,31 +34,67 @@ app.get("/", (req, res) => {
 });
 
 app.get("/:room", (req, res) => {
-  res.render("room", {
-    roomId: req.params.room,
-    secretKey: process.env.CHAT_SECRET,
-    turnUser: process.env.TURN_USER,
-    turnPass: process.env.TURN_PASS
-  });
-
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
+  res.set('Surrogate-Control', 'no-store');
+  res.set('X-Content-Type-Options', 'nosniff');
+  res.set('X-Frame-Options', 'DENY');
+  res.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  res.set("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' ws: wss:;");
+  
+  res.render("room", { roomId: req.params.room });
 });
 
 io.on("connection", (socket) => {
-  socket.on("join-room", (roomId, userId) => {
+  socket.on("join-request", (roomId, userId, authHash) => {
+    
+    if (authHash !== process.env.hashed_secret) {
+      socket.emit("auth-failed");
+      socket.disconnect(true);
+      return;
+    }
+
+    const room = io.sockets.adapter.rooms.get(roomId);
+    const numClients = room ? room.size : 0;
+    
+    if (numClients >= 2) {
+      socket.emit("room-full");
+      socket.disconnect(true);
+      return;
+    }
+
     socket.join(roomId);
+    
+    const turnConfig = {
+      iceServers: [
+        { urls: "stun:stun.l.google.com:19302" },
+        { 
+          urls: process.env.TURN_URL || "turn:global.turn.metered.ca:80", 
+          username: process.env.TURN_USER, 
+          credential: process.env.TURN_PASS 
+        }
+      ]
+    };
 
-    setTimeout(() => {
-      socket.to(roomId).broadcast.emit("user-connected", userId);
-    }, 1000);
-
-    socket.on("message", (message) => {
-      io.to(roomId).emit("createMessage", message, userId);
-    });
+    socket.emit("auth-success", turnConfig);
 
     socket.on("disconnect", () => {
-      console.log("User Disconnected");
-      io.emit("user-disconnected", userId);
+      socket.to(roomId).emit("user-disconnected", userId);
     });
+
+    socket.on("manual-leave", () => {
+      socket.leave(roomId);
+      socket.to(roomId).emit("user-disconnected", userId);
+    });
+  });
+
+  socket.on("ready-to-stream", (roomId, userId) => {
+    socket.to(roomId).emit("user-connected", userId);
+  });
+
+  socket.on("message", (message, roomId, userId) => {
+    io.to(roomId).emit("createMessage", message, userId);
   });
 });
 

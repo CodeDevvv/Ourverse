@@ -1,10 +1,10 @@
-@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap");
-
 :root {
   --dark-bg: #000000;
-  --glass-bg: rgba(60, 60, 60, 0.6);
+  --glass-bg: rgba(20, 20, 20, 0.9);
   --primary: #00B8A9;
+  --primary-hover: #009185;
   --red: #eb4d4b;
+  --surface: #1E1E1E;
 }
 
 * {
@@ -15,25 +15,31 @@
 
 body {
   background-color: var(--dark-bg);
-  font-family: "Poppins", sans-serif;
+  /* Use system default fonts for maximum privacy and speed */
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
   height: 100vh;
+  height: 100dvh; 
   width: 100vw;
   overflow: hidden;
   display: flex;
   flex-direction: column;
 }
 
-/* --- VIDEO LAYOUT --- */
 #video-grid {
   position: relative;
   width: 100%;
   height: 100%;
   background: black;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: height 0.3s ease;
 }
 
 video {
   object-fit: cover;
-  transition: all 0.3s ease-in-out;
+  transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+  background: #000;
 }
 
 .full-screen-video {
@@ -47,20 +53,30 @@ video {
 
 .floating-video {
   position: absolute;
-  width: 120px;
-  height: 160px;
+  width: 180px;
+  height: 240px;
   bottom: 100px;
   right: 20px;
-  z-index: 10;
+  z-index: 50;
   border-radius: 12px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.5);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0px 8px 20px rgba(0, 0, 0, 0.7);
   cursor: pointer;
+  transition: all 0.4s ease;
 }
 
 .floating-video:hover {
-  transform: scale(1.05);
+  transform: scale(1.02);
   border-color: var(--primary);
+}
+
+body.chat-open .floating-video {
+    bottom: auto;
+    top: 20px;
+    right: 20px;
+    width: 140px;
+    height: 186px;
+    border-color: var(--primary);
 }
 
 .options-bar {
@@ -72,16 +88,20 @@ video {
   gap: 15px;
   padding: 12px 25px;
   background: var(--glass-bg);
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border-radius: 30px;
   z-index: 100;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
 }
 
 .control-btn {
+  position: relative; 
   width: 50px;
   height: 50px;
   border-radius: 50%;
-  background-color: rgba(255, 255, 255, 0.2);
+  background-color: rgba(255, 255, 255, 0.1);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -91,19 +111,38 @@ video {
   transition: all 0.2s ease;
 }
 
+.control-btn.has-new-msg::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 12px;
+  height: 12px;
+  background-color: var(--red);
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  animation: pulse-red 2s infinite;
+}
+
+@keyframes pulse-red {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(235, 77, 75, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(235, 77, 75, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(235, 77, 75, 0); }
+}
+
 .control-btn:hover {
-  background-color: rgba(255, 255, 255, 0.4);
-  transform: scale(1.1);
+  background-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
 }
 
 .control-btn.off {
-  background-color: #ff4757 !important;
+  background-color: var(--red) !important;
   color: white;
-  box-shadow: 0 0 10px rgba(255, 71, 87, 0.6);
+  box-shadow: 0 0 10px rgba(235, 77, 75, 0.4);
 }
 
 .hangup-btn {
-  background-color: #ff4757;
+  background-color: var(--red);
   width: 60px;
   height: 60px;
 }
@@ -119,29 +158,105 @@ video {
   box-shadow: 0 0 15px var(--primary);
 }
 
-/* --- MODAL STYLES --- */
+.control-btn.sharing {
+  background-color: var(--primary) !important;
+  color: #000;
+  box-shadow: 0 0 15px var(--primary);
+}
+
 .modal {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.85);
-  z-index: 9999;
+  background: rgba(0, 0, 0, 0.96);
+  z-index: 99999;
   display: flex;
   justify-content: center;
   align-items: center;
+  backdrop-filter: blur(5px);
 }
 
 .modal-content {
   position: relative;
-  background: #1e1e1e;
-  padding: 30px;
-  border-radius: 15px;
+  background: #121212;
+  padding: 35px 30px;
+  border-radius: 20px;
   text-align: center;
   width: 90%;
-  max-width: 350px;
+  max-width: 400px;
   color: white;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+  border: 1px solid rgba(255,255,255,0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.modal-content h3 {
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    margin-bottom: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.modal-content p {
+    color: #888;
+    font-size: 0.9rem;
+    margin-bottom: 10px;
+}
+
+.modal-content input {
+  width: 100%;
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid #333;
+  background: #1E1E1E;
+  color: white;
+  font-size: 1.1rem;
+  outline: none;
+  text-align: center;
+  letter-spacing: 2px;
+  transition: border-color 0.3s;
+}
+
+.modal-content input::placeholder {
+    letter-spacing: normal;
+    color: #555;
+    font-size: 1rem;
+}
+
+.modal-content input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(0, 184, 169, 0.1);
+}
+
+#startCallButton, #setSecretBtn {
+  background: var(--primary);
+  color: white;
+  padding: 14px;
+  border: none;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  width: 100%;
+  transition: all 0.2s;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+#startCallButton:hover, #setSecretBtn:hover {
+    background: var(--primary-hover);
+    transform: translateY(-1px);
+}
+
+#setSecretBtn {
+    background: linear-gradient(135deg, #eb4d4b 0%, #c0392b 100%);
 }
 
 .close-modal-x {
@@ -149,7 +264,7 @@ video {
   top: 15px;
   right: 20px;
   font-size: 1.5rem;
-  color: #aaa;
+  color: #555;
   cursor: pointer;
   transition: color 0.3s;
 }
@@ -158,97 +273,58 @@ video {
   color: white;
 }
 
-.modal-content input {
-  width: 100%;
-  padding: 12px;
-  margin: 15px 0;
-  border-radius: 8px;
-  border: none;
-  background: #333;
-  color: white;
-  font-size: 1rem;
-}
-
-#startCallButton {
-  background: var(--primary);
-  color: white;
-  padding: 12px 30px;
-  border: none;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  width: 100%;
-}
-
 .link-container {
   display: flex;
-  background: #333;
+  background: #1E1E1E;
   padding: 5px;
-  border-radius: 8px;
-  margin-top: 15px;
-  border: 1px solid #555;
+  border-radius: 10px;
+  border: 1px solid #333;
+  align-items: center;
 }
 
 #inviteUrl {
   background: transparent;
   border: none;
-  color: #fff;
+  color: #ddd;
   width: 100%;
   outline: none;
   font-family: monospace;
+  padding: 8px;
+  font-size: 0.9rem;
 }
 
 #copyBtn {
-  background: var(--primary);
+  background: #333;
   border: none;
   color: white;
-  padding: 8px 15px;
+  padding: 8px 12px;
   border-radius: 6px;
   cursor: pointer;
+  transition: background 0.2s;
 }
+#copyBtn:hover { background: #444; }
 
-#closeInvite {
-  background: #555;
-  color: #fff;
-  padding: 10px 20px;
-  margin-top: 15px;
-  cursor: pointer;
-  border: none;
-  border-radius: 5px;
-  font-size: 16px;
-  transition: background-color 0.3s ease;
-  display: inline-block;
-}
-
-#closeInvite:hover {
-  background-color: #777;
-}
-
-/* --- CHAT STYLING --- */
 .main_right {
   position: fixed;
   right: 20px;
   bottom: 100px;
   width: 300px;
-  height: 400px;
-
-  /* Glass Styles */
-  background: rgba(20, 20, 20, 0.6);
+  height: 450px;
+  background: rgba(20, 20, 20, 0.95);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
   border-radius: 15px;
   display: flex;
   flex-direction: column;
-  z-index: 50;
-  transition: all 0.3s ease;
+  z-index: 60;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-origin: bottom right;
 }
 
 .main_header {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.03);
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   padding: 15px;
   color: white;
@@ -262,171 +338,131 @@ video {
   flex-grow: 1;
   overflow-y: auto;
   padding: 15px;
+  scrollbar-width: thin;
+  scrollbar-color: #444 transparent;
+  scroll-behavior: smooth; 
 }
 
-.messages {
-  list-style: none;
-  padding: 0;
-}
-
-.message {
-  margin-bottom: 12px;
-  display: flex;
-  flex-direction: column;
-}
-
-.message b {
-  font-size: 0.8rem;
-  color: var(--primary);
-  margin-bottom: 2px;
-}
-
+.messages { list-style: none; padding: 0; }
+.message { margin-bottom: 15px; display: flex; flex-direction: column; }
+.message b { font-size: 0.7rem; color: #888; margin-bottom: 4px; margin-left: 2px;}
 .message span {
-  background: #444;
-  padding: 8px 12px;
-  border-radius: 8px;
-  color: white;
+  background: #2A2A2A;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border-top-left-radius: 2px;
+  color: #eee;
   font-size: 0.9rem;
   word-wrap: break-word;
+  line-height: 1.4;
 }
 
-.self-message {
-  align-items: flex-end;
-}
-
+.self-message { align-items: flex-end; }
+.self-message b { margin-right: 2px; color: var(--primary); }
 .self-message span {
   background: var(--primary);
   color: #000;
+  border-radius: 12px;
+  border-top-right-radius: 2px;
+  font-weight: 500;
 }
 
 .main_message_container {
-  padding: 10px;
+  padding: 12px;
   display: flex;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(0, 0, 0, 0.2);
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 0 0 15px 15px;
-  position: relative;
+  align-items: center;
 }
 
 #chat_message {
   flex-grow: 1;
-  background-color: transparent;
+  background: transparent;
   border: none;
   color: white;
   outline: none;
+  padding: 0 10px;
+  font-size: 0.95rem;
 }
 
-#sendMsgBtn {
-  background: none;
-  border: none;
-  color: var(--primary);
-  font-size: 1.2rem;
-  cursor: pointer;
-}
-
-#emojiBtn {
-  background: none;
-  border: none;
-  color: #aaa;
-  font-size: 1.2rem;
-  cursor: pointer;
-  margin-right: 10px;
-  transition: color 0.2s;
-}
-
-#emojiBtn:hover {
-  color: #ffeaa7;
-}
+#sendMsgBtn { background: none; border: none; color: var(--primary); font-size: 1.2rem; cursor: pointer; padding: 5px;}
+#emojiBtn { background: none; border: none; color: #777; font-size: 1.2rem; cursor: pointer; margin-right: 5px; padding: 5px;}
+#emojiBtn:hover { color: #ffeaa7; }
 
 .pickerContainer {
   position: absolute;
   bottom: 60px;
-  right: 20px;
+  right: 10px;
   z-index: 100;
   display: none;
 }
 
-
-.control-btn.sharing {
-  background-color: var(--primary) !important;
-  color: #000;
-  box-shadow: 0 0 15px var(--primary);
-}
-
-video.screen-share-mode {
-  object-fit: contain !important;
-  background: #000;
-}
-
-
 @media screen and (max-width: 768px) {
-  .floating-video {
-    width: 90px;
-    height: 120px;
-    bottom: 90px;
-    right: 15px;
-    border-width: 1px;
+  #video-grid {
+    height: calc(100dvh - 80px); 
+    align-items: center;
   }
 
   .options-bar {
-    width: 90%;
-    max-width: 400px;
-    padding: 10px 15px;
-    gap: 8px;
-    bottom: 20px;
-    justify-content: space-around;
+    width: 100%;
+    bottom: 0;
+    left: 0;
+    transform: none;
+    border-radius: 20px 20px 0 0;
+    background: #111;
+    border-top: 1px solid #333;
+    border-left: none;
+    border-right: none;
+    border-bottom: none;
+    padding: 15px 10px 25px 10px;
+    justify-content: space-evenly;
+    gap: 5px;
+    height: 80px;
   }
 
   .control-btn {
-    width: 45px;
-    height: 45px;
+    width: 42px;
+    height: 42px;
     font-size: 1rem;
+    background-color: #222;
+  }
+  
+  .hangup-btn {
+    width: 48px;
+    height: 48px;
   }
 
-  .hangup-btn {
-    width: 50px;
-    height: 50px;
+  .floating-video {
+    width: 100px;
+    height: 140px;
+    bottom: 20px;
+    right: 15px;
+    border-width: 2px;
   }
 
   .main_right {
-    width: 95%;
-    height: 50vh;
-    right: auto;
-    left: 50%;
-    transform: translateX(-50%);
-    bottom: 90px;
-  }
-
-  .modal-content {
-    width: 95%;
-    padding: 20px;
-  }
-
-  .pickerContainer {
-    right: 0;
-    bottom: 50px;
     width: 100%;
+    height: calc(100dvh - 80px);
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: auto;
+    border-radius: 0;
+    z-index: 200;
   }
-
-  .picmo__picker {
-    width: 100% !important;
+  
+  body.chat-open .floating-video {
+    top: 15px;
+    right: 15px;
+    bottom: auto;
+    width: 80px;
+    height: 110px;
+    z-index: 201;
   }
-}
-
-@media screen and (max-width: 380px) {
-  .control-btn {
-    width: 40px;
-    height: 40px;
-    font-size: 0.9rem;
-  }
-
-  .hangup-btn {
-    width: 45px;
-    height: 45px;
-  }
-
-  .options-bar {
-    padding: 8px 10px;
-    gap: 5px;
+  
+  .modal-content {
+    width: 85%;
+    padding: 25px 20px;
   }
 }

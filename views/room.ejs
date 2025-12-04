@@ -1,30 +1,41 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>OurVerse</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' ws: wss:;">
+  
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+
+  <title>OurVerse - Secure</title>
   <link rel="stylesheet" href="style.css" />
+
   <script src="/socket.io/socket.io.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
-  <script src="https://unpkg.com/peerjs@1.3.1/dist/peerjs.min.js"></script>
-  <script src="https://kit.fontawesome.com/c939d0e917.js" crossorigin="anonymous"></script>
-  <script src="https://unpkg.com/picmo@latest/dist/umd/index.js"></script>
+  <script src="/libs/crypto-js.min.js"></script>
+  <script src="/libs/peerjs.min.js"></script>
+  <script src="/libs/picmo.js"></script>
+
   <script>
     const ROOM_ID = "<%= roomId %>";
-    const ENCRYPT_KEY = "<%= secretKey %>";
-    const TURN_USER = "<%= turnUser %>";
-    const TURN_PASS = "<%= turnPass %>";
   </script>
 </head>
 
 <body>
+  <div id="securityModal" class="modal" style="display: flex;">
+    <div class="modal-content" style="border: 1px solid var(--red);">
+      <h3>🔒 Security Check</h3>
+      <p id="securityMsg">Enter the shared secret password.</p>
+      <input type="password" id="secretPassInput" placeholder="Password" style="width: 80%; padding: 10px; margin: 10px 0;">
+      <button id="setSecretBtn" style="background: var(--red);">Set Key</button>
+    </div>
+  </div>
 
-  <div id="startModal" class="modal">
+  <div id="startModal" class="modal" style="display: none;">
     <div class="modal-content">
       <h3>Ready?</h3>
-      <p style="color: #aaa; margin-bottom: 20px;">Click below to join the room</p>
       <button id="startCallButton">Join Call</button>
     </div>
   </div>
@@ -32,42 +43,42 @@
   <div id="inviteModal" class="modal" style="display: none;">
     <div class="modal-content">
       <span id="closeInviteX" class="close-modal-x">&times;</span>
-      <h3>Invite Someone</h3>
+      <h3>Invite Her</h3>
       <div class="link-container">
         <input type="text" id="inviteUrl" readonly>
-        <button id="copyBtn"><i class="fas fa-copy"></i></button>
+        <button id="copyBtn">📋</button>
       </div>
-      <button id="closeInvite" style="margin-top:15px; background:#444; color:white; border:none; padding:8px 15px; border-radius:5px; cursor:pointer;">Close</button>
+      <button id="closeInvite" style="background: #444; color:white; border:none; padding:8px 15px; border-radius:5px; cursor:pointer; margin-top: 15px;">Close</button>
     </div>
   </div>
 
   <div id="video-grid"></div>
 
   <div class="options-bar">
-    <div id="stopVideo" class="control-btn">
-      <i class="fas fa-video"></i>
+    <div id="stopVideo" class="control-btn" title="Toggle Video">
+      🎥
     </div>
-    <div id="muteButton" class="control-btn">
-      <i class="fas fa-microphone"></i>
+    <div id="muteButton" class="control-btn" title="Toggle Mic">
+      🎤
     </div>
-    <div id="shareScreen" class="control-btn">
-      <i class="fas fa-desktop"></i>
+    <div id="shareScreen" class="control-btn" title="Share Screen">
+      💻
     </div>
-    <div id="disconnect" class="control-btn hangup-btn">
-      <i class="fas fa-phone-slash"></i>
+    <div id="disconnect" class="control-btn hangup-btn" title="Disconnect">
+      ❌
     </div>
-    <div id="inviteButton" class="control-btn">
-      <i class="fas fa-share-alt"></i>
+    <div id="inviteButton" class="control-btn" title="Invite">
+      🔗
     </div>
-    <div id="toggleChat" class="control-btn">
-      <i class="fas fa-comment-alt"></i>
+    <div id="toggleChat" class="control-btn" title="Chat">
+      💬
     </div>
   </div>
 
   <div class="main_right" id="chatWindow" style="display: none;">
     <div class="main_header">
       <h6>Secure Chat</h6>
-      <div id="closeChat" style="cursor: pointer;"><i class="fas fa-times"></i></div>
+      <div id="closeChat" style="cursor: pointer;">✖</div>
     </div>
 
     <div class="main_chat_window" id="mainChatWindow">
@@ -77,12 +88,12 @@
     <div id="emojiPickerContainer" class="pickerContainer"></div>
 
     <div class="main_message_container">
-      <button id="emojiBtn"><i class="far fa-smile"></i></button> <input id="chat_message" type="text" placeholder="Type message..." autocomplete="off">
-      <button id="sendMsgBtn"><i class="fas fa-paper-plane"></i></button>
+      <button id="emojiBtn">😀</button>
+      <input id="chat_message" type="text" placeholder="Type message..." autocomplete="off">
+      <button id="sendMsgBtn">➤</button>
     </div>
   </div>
 
   <script src="script.js"></script>
 </body>
-
 </html>

@@ -1,8 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
   const socket = io("/");
   const videoGrid = document.getElementById("video-grid");
-  
-  // 1. Secure ID Handling: Get Room ID from hidden input (no inline script)
   const roomIdInput = document.getElementById("secure-room-id");
   const ROOM_ID = roomIdInput ? roomIdInput.value : null;
 
@@ -14,14 +12,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const myVideo = document.createElement("video");
   myVideo.muted = true;
   myVideo.classList.add("local-video");
+  myVideo.setAttribute('playsinline', '');
 
   let myVideoStream;
   let peer;
   let myPeerId = null;
   let SESSION_KEY = null;
-  let turnConfig = null;
   let peers = {};
-
   let localVideoEl = myVideo;
   let remoteVideoEl = null;
 
@@ -30,146 +27,143 @@ document.addEventListener("DOMContentLoaded", () => {
   const setSecretBtn = document.getElementById("setSecretBtn");
   const startModal = document.getElementById("startModal");
 
-  // Focus password input on load
   secretPassInput.focus();
 
   secretPassInput.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") {
-      setSecretBtn.click();
-    }
+    if (e.key === "Enter") setSecretBtn.click();
   });
 
   setSecretBtn.addEventListener("click", () => {
     const val = secretPassInput.value;
     if (!val) return;
-    
     SESSION_KEY = val;
-    // Hash key for server authentication (server never sees real key)
     const authHash = CryptoJS.SHA256(val).toString(CryptoJS.enc.Hex);
-    
-    initializeAuth(authHash);
+    socket.emit("join-request", ROOM_ID, authHash);
   });
 
-  function initializeAuth(authHash) {
-    if (peer) return;
-
-    const isProduction = window.location.hostname !== "localhost";
-
-    if (isProduction) {
-        peer = new Peer(undefined, {
-            path: '/peerjs',
-            host: '/',
-            port: 443, 
-            secure: true,
-            config: {
-                iceServers: [
-                { urls: 'stun:stun.l.google.com:19302' },
-                {
-                    urls: 'turn:global.turn.metered.ca:80',
-                    username: 'your_turn_username',
-                    credential: 'your_turn_password'
-                }
-                ]
-            }
-        });
-    } else {
-        peer = new Peer(undefined, {
-            path: '/peerjs',
-            host: '/',
-            port: 3030, 
-            secure: false 
-        });
-    }
-
-    peer.on("open", (id) => {
-      myPeerId = id;
-      socket.emit("join-request", ROOM_ID, id, authHash);
-    });
-
-    peer.on("error", (err) => {
-      console.error("Peer Connection Error:", err);
-    });
-  }
-
   socket.on("auth-failed", () => {
-    alert("Security Check Failed.");
     killEverything();
   });
 
   socket.on("room-full", () => {
-    alert("Secure Room is Full.");
     window.location.href = "about:blank";
   });
 
   socket.on("auth-success", (serverTurnConfig) => {
-    turnConfig = serverTurnConfig;
-    if (peer && window.location.hostname !== "localhost") {
-      peer.options.config = turnConfig;
-    }
     securityModal.style.display = "none";
     startModal.style.display = "flex";
+    initializePeer(serverTurnConfig);
   });
+
+  function initializePeer(turnConfig) {
+    if (peer) return;
+    
+    // Toggle these comments for Localhost vs Production
+    // const isProduction = false; 
+    const isProduction = true;
+
+    if (isProduction) {
+      peer = new Peer(undefined, {
+        path: '/peerjs',
+        host: '/',
+        port: 443,
+        secure: true,
+        config: turnConfig,
+        debug: 0
+      });
+    } else {
+      peer = new Peer(undefined, {
+        path: '/peerjs',
+        host: '/',
+        port: 3030,
+        secure: false,
+        debug: 0
+      });
+    }
+
+    peer.on("open", (id) => {
+      myPeerId = id;
+    });
+
+    peer.on("call", (call) => {
+      if(myVideoStream) {
+         answerCall(call);
+      } else {
+         navigator.mediaDevices.getUserMedia({ audio: true, video: true })
+         .then((stream) => {
+            myVideoStream = stream;
+            addLocalVideo(stream);
+            answerCall(call);
+         }).catch(() => killEverything());
+      }
+    });
+  }
+
+  function answerCall(call) {
+    call.answer(myVideoStream);
+    const video = document.createElement("video");
+    video.setAttribute('playsinline', '');
+    call.on("stream", (userVideoStream) => {
+      handleRemoteStream(video, userVideoStream, call.peer);
+    });
+    call.on("close", () => {
+      removeRemoteVideo();
+    });
+    peers[call.peer] = { call, video };
+  }
 
   document.getElementById("startCallButton").addEventListener("click", () => {
     startModal.style.display = "none";
+    if (myVideoStream) {
+       notifyReady();
+       return;
+    }
     navigator.mediaDevices.getUserMedia({
       audio: true,
       video: true,
     }).then((stream) => {
       myVideoStream = stream;
+      addLocalVideo(stream);
+      notifyReady();
+    }).catch(() => {
+      alert("Hardware access denied.");
+    });
+  });
 
+  function addLocalVideo(stream) {
       localVideoEl.srcObject = stream;
       localVideoEl.addEventListener("loadedmetadata", () => {
         localVideoEl.play();
       });
-      videoGrid.append(localVideoEl);
+      if(!document.contains(localVideoEl)) videoGrid.append(localVideoEl);
       updateLayout();
-
-      setupCallHandlers(stream);
-    }).catch(err => {
-      alert("Camera access required for secure call.");
-      console.error(err);
-    });
-  });
-
-  function setupCallHandlers(stream) {
-    peer.on("call", (call) => {
-      call.answer(stream);
-
-      const video = document.createElement("video");
-      const remoteUserId = call.peer;
-
-      call.on("stream", (userVideoStream) => {
-        handleRemoteStream(video, userVideoStream, remoteUserId);
-      });
-
-      peers[remoteUserId] = { call, video };
-
-      call.on("close", () => {
-        removeRemoteVideo();
-      });
-    });
-
-    socket.on("user-connected", (userId) => {
-      connectToNewUser(userId, stream);
-    });
-
-    socket.emit("ready-to-stream", ROOM_ID, myPeerId);
   }
 
+  function notifyReady() {
+     if(peer && myPeerId) {
+        socket.emit("peer-ready", ROOM_ID, myPeerId);
+     } else {
+        setTimeout(notifyReady, 500);
+     }
+  }
+
+  socket.on("user-connected", (userId) => {
+    connectToNewUser(userId, myVideoStream);
+  });
+
   const connectToNewUser = (userId, stream) => {
-    const call = peer.call(userId, stream);
-    const video = document.createElement("video");
-
-    call.on("stream", (userVideoStream) => {
-      handleRemoteStream(video, userVideoStream, userId);
-    });
-
-    call.on("close", () => {
-      removeRemoteVideo();
-    });
-
-    peers[userId] = { call, video };
+    setTimeout(() => {
+        const call = peer.call(userId, stream);
+        const video = document.createElement("video");
+        video.setAttribute('playsinline', '');
+        call.on("stream", (userVideoStream) => {
+          handleRemoteStream(video, userVideoStream, userId);
+        });
+        call.on("close", () => {
+          removeRemoteVideo();
+        });
+        peers[userId] = { call, video };
+    }, 1000);
   };
 
   function handleRemoteStream(videoEl, stream, userId) {
@@ -181,11 +175,9 @@ document.addEventListener("DOMContentLoaded", () => {
     remoteVideoEl.srcObject = stream;
     remoteVideoEl.setAttribute("id", userId);
     remoteVideoEl.classList.add("remote-video");
-
     remoteVideoEl.addEventListener("loadedmetadata", () => {
       remoteVideoEl.play();
     });
-
     videoGrid.append(remoteVideoEl);
     updateLayout();
   }
@@ -199,11 +191,11 @@ document.addEventListener("DOMContentLoaded", () => {
     updateLayout();
   }
 
-  socket.on("user-disconnected", (userId) => {
-    if (peers[userId]) {
-      if (peers[userId].call) peers[userId].call.close();
-      delete peers[userId];
+  socket.on("user-disconnected", () => {
+    for (let key in peers) {
+        if (peers[key].call) peers[key].call.close();
     }
+    peers = {};
     removeRemoteVideo();
   });
 
@@ -216,10 +208,8 @@ document.addEventListener("DOMContentLoaded", () => {
     else {
       localVideoEl.className = "floating-video";
       localVideoEl.style.zIndex = "100";
-
       remoteVideoEl.className = "full-screen-video";
       remoteVideoEl.style.zIndex = "1";
-
       localVideoEl.onclick = swapViews;
       remoteVideoEl.onclick = swapViews;
     }
@@ -227,17 +217,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function swapViews() {
     if (!localVideoEl || !remoteVideoEl) return;
-
     if (localVideoEl.classList.contains("floating-video")) {
       localVideoEl.className = "full-screen-video";
       localVideoEl.style.zIndex = "1";
-
       remoteVideoEl.className = "floating-video";
       remoteVideoEl.style.zIndex = "100";
     } else {
       localVideoEl.className = "floating-video";
       localVideoEl.style.zIndex = "100";
-
       remoteVideoEl.className = "full-screen-video";
       remoteVideoEl.style.zIndex = "1";
     }
@@ -250,29 +237,19 @@ document.addEventListener("DOMContentLoaded", () => {
         track.enabled = false;
       });
     }
-
     if (socket) {
       socket.emit("manual-leave");
       socket.disconnect();
     }
-
-    if (peer) {
-      peer.destroy();
-    }
-
+    if (peer) peer.destroy();
     window.location.href = "about:blank";
   }
 
   document.getElementById("disconnect").addEventListener("click", () => {
-    if (confirm("Securely End Call?")) {
-      killEverything();
-    }
-  });
-
-  window.addEventListener("popstate", () => {
     killEverything();
   });
 
+  window.addEventListener("popstate", killEverything);
   window.addEventListener("beforeunload", () => {
     if (socket) socket.emit("manual-leave");
   });
@@ -310,13 +287,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (audioTrack) {
       audioTrack.enabled = !audioTrack.enabled;
       const btn = document.getElementById("muteButton");
-      if (audioTrack.enabled) {
-        btn.classList.remove("off");
-        btn.innerHTML = `🎤`;
-      } else {
-        btn.classList.add("off");
-        btn.innerHTML = `🔇`;
-      }
+      btn.classList.toggle("off", !audioTrack.enabled);
+      btn.innerHTML = audioTrack.enabled ? `🎤` : `🔇`;
     }
   });
 
@@ -326,13 +298,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (videoTrack) {
       videoTrack.enabled = !videoTrack.enabled;
       const btn = document.getElementById("stopVideo");
-      if (videoTrack.enabled) {
-        btn.classList.remove("off");
-        btn.innerHTML = `🎥`;
-      } else {
-        btn.classList.add("off");
-        btn.innerHTML = `❌`;
-      }
+      btn.classList.toggle("off", !videoTrack.enabled);
+      btn.innerHTML = videoTrack.enabled ? `🎥` : `❌`;
     }
   });
 
@@ -346,16 +313,12 @@ document.addEventListener("DOMContentLoaded", () => {
     if (isHidden) {
       chatWindow.style.display = "flex";
       chatToggleBtn.classList.add("chat-active");
-
       chatToggleBtn.classList.remove("has-new-msg");
-
       document.body.classList.add("chat-open");
       document.getElementById("chat_message").focus();
-
       setTimeout(() => {
         mainChatWindow.scrollTop = mainChatWindow.scrollHeight;
       }, 50);
-
     } else {
       chatWindow.style.display = "none";
       chatToggleBtn.classList.remove("chat-active");
@@ -378,15 +341,12 @@ document.addEventListener("DOMContentLoaded", () => {
           audio: true
         });
         const screenVideoTrack = screenStream.getVideoTracks()[0];
-
         for (let key in peers) {
           const sender = peers[key].call.peerConnection.getSenders().find((s) => s.track.kind === "video");
           if (sender) sender.replaceTrack(screenVideoTrack);
         }
-
         localVideoEl.srcObject = screenStream;
         localVideoEl.classList.add("screen-share-mode");
-
         isSharing = true;
         shareScreenBtn.classList.add("sharing");
         shareScreenBtn.innerHTML = `🛑`;
@@ -400,26 +360,21 @@ document.addEventListener("DOMContentLoaded", () => {
   function stopScreenSharing() {
     if (screenStream) screenStream.getTracks().forEach((track) => track.stop());
     navigator.mediaDevices.getUserMedia({ video: true, audio: true }).then((newStream) => {
-      const oldAudioTrack = myVideoStream.getAudioTracks()[0];
-
-      if (oldAudioTrack && !oldAudioTrack.enabled) {
-        newStream.getAudioTracks()[0].enabled = false;
-      }
-
-      myVideoStream = newStream;
-
-      const newVideoTrack = newStream.getVideoTracks()[0];
-      for (let key in peers) {
-        const sender = peers[key].call.peerConnection.getSenders().find((s) => s.track.kind === "video");
-        if (sender) sender.replaceTrack(newVideoTrack);
-      }
-
-      localVideoEl.srcObject = newStream;
-      localVideoEl.classList.remove("screen-share-mode");
-
-      isSharing = false;
-      shareScreenBtn.classList.remove("sharing");
-      shareScreenBtn.innerHTML = `💻`;
+        const oldAudioTrack = myVideoStream.getAudioTracks()[0];
+        if (oldAudioTrack && !oldAudioTrack.enabled) {
+          newStream.getAudioTracks()[0].enabled = false;
+        }
+        myVideoStream = newStream;
+        const newVideoTrack = newStream.getVideoTracks()[0];
+        for (let key in peers) {
+            const sender = peers[key].call.peerConnection.getSenders().find((s) => s.track.kind === "video");
+            if (sender) sender.replaceTrack(newVideoTrack);
+        }
+        localVideoEl.srcObject = newStream;
+        localVideoEl.classList.remove("screen-share-mode");
+        isSharing = false;
+        shareScreenBtn.classList.remove("sharing");
+        shareScreenBtn.innerHTML = `💻`;
     });
   }
 
@@ -433,7 +388,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const encryptedMsg = CryptoJS.AES.encrypt(msg, SESSION_KEY).toString();
         socket.emit("message", encryptedMsg, ROOM_ID, myPeerId);
         textInput.value = "";
-      } catch (err) { alert("Encryption error."); }
+      } catch (err) { }
     }
   };
 
@@ -445,36 +400,24 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const bytes = CryptoJS.AES.decrypt(encryptedMsg, SESSION_KEY);
       const originalText = bytes.toString(CryptoJS.enc.Utf8);
-
       const messagesUl = document.getElementById("allMessages");
       const li = document.createElement("li");
       li.classList.add("message");
-
       const isMe = senderId === myPeerId;
       if (isMe) li.classList.add("self-message");
-
       if (originalText) {
         const boldName = document.createElement("b");
         boldName.textContent = isMe ? "You" : "Her";
-
         const spanMsg = document.createElement("span");
         spanMsg.textContent = originalText;
-
         li.appendChild(boldName);
         li.appendChild(spanMsg);
-      } else {
-        li.innerHTML = `<b style="color:red">System</b><span>[Decryption Failed]</span>`;
       }
-
       messagesUl.append(li);
-
       if (originalText) {
         mainChatWindow.scrollTop = mainChatWindow.scrollHeight;
-
         const isChatOpen = document.body.classList.contains("chat-open");
-        if (!isChatOpen) {
-          chatToggleBtn.classList.add("has-new-msg");
-        }
+        if (!isChatOpen) chatToggleBtn.classList.add("has-new-msg");
       }
     } catch (e) { }
   });
@@ -483,22 +426,17 @@ document.addEventListener("DOMContentLoaded", () => {
     fetch('/libs/data.json').then(res => res.json()),
     fetch('/libs/messages.json').then(res => res.json())
   ]).then(([emojiData, messagesData]) => {
-      
     const picker = picmo.createPicker({ 
         rootElement: container,
         data: emojiData,
         messages: messagesData
     });
-    
     picker.addEventListener('emoji:select', (selection) => {
         textInput.value += selection.emoji;
         container.style.display = 'none';
         textInput.focus();
     });
-
-  }).catch(err => {
-      // Squelch error in production to avoid console leaks
-  });
+  }).catch(() => {});
 
   document.getElementById("emojiBtn").addEventListener("click", (e) => {
     e.stopPropagation();

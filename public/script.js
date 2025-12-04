@@ -1,6 +1,15 @@
 document.addEventListener("DOMContentLoaded", () => {
   const socket = io("/");
   const videoGrid = document.getElementById("video-grid");
+  
+  // 1. Secure ID Handling: Get Room ID from hidden input (no inline script)
+  const roomIdInput = document.getElementById("secure-room-id");
+  const ROOM_ID = roomIdInput ? roomIdInput.value : null;
+
+  if (!ROOM_ID) {
+    window.location.href = "about:blank";
+    return;
+  }
 
   const myVideo = document.createElement("video");
   myVideo.muted = true;
@@ -21,6 +30,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const setSecretBtn = document.getElementById("setSecretBtn");
   const startModal = document.getElementById("startModal");
 
+  // Focus password input on load
+  secretPassInput.focus();
+
   secretPassInput.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
       setSecretBtn.click();
@@ -32,6 +44,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!val) return;
     
     SESSION_KEY = val;
+    // Hash key for server authentication (server never sees real key)
     const authHash = CryptoJS.SHA256(val).toString(CryptoJS.enc.Hex);
     
     initializeAuth(authHash);
@@ -42,17 +55,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const isProduction = window.location.hostname !== "localhost";
 
-    if (!isProduction) {
-        // --- LOCALHOST MODE ---
-        console.log("🔒 OurVerse: Running in Localhost Security Mode");
-        peer = new Peer(undefined, {
-            path: '/peerjs',
-            host: '/',
-            port: 3030, 
-            secure: false 
-        });
-    } else {
-        // --- PRODUCTION MODE ---
+    if (isProduction) {
         peer = new Peer(undefined, {
             path: '/peerjs',
             host: '/',
@@ -68,6 +71,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
                 ]
             }
+        });
+    } else {
+        peer = new Peer(undefined, {
+            path: '/peerjs',
+            host: '/',
+            port: 3030, 
+            secure: false 
         });
     }
 
@@ -487,7 +497,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
   }).catch(err => {
-      console.error("Failed to load local emoji data. Check /public/libs/ folder.", err);
+      // Squelch error in production to avoid console leaks
   });
 
   document.getElementById("emojiBtn").addEventListener("click", (e) => {

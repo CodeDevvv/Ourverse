@@ -3,97 +3,70 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' ws: wss:;">
-  
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-  <meta http-equiv="Pragma" content="no-cache" />
-  <meta http-equiv="Expires" content="0" />
-
-  <title>OurVerse - Secure</title>
+  <meta name="robots" content="noindex, nofollow">
+  <title>OurVerse</title>
   <link rel="stylesheet" href="style.css" />
-
-  <script src="/socket.io/socket.io.js"></script>
-  <script src="/libs/crypto-js.min.js"></script>
-  <script src="/libs/peerjs.min.js"></script>
-  <script src="/libs/picmo.js"></script>
-
-  <script>
-    const ROOM_ID = "<%= roomId %>";
-  </script>
+  <script src="/socket.io/socket.io.js" defer></script>
+  <script src="/libs/crypto-js.min.js" defer></script>
+  <script src="/libs/peerjs.min.js" defer></script>
+  <script src="/libs/picmo.js" defer></script>
+  <script src="script.js" defer></script>
 </head>
-
 <body>
-  <div id="securityModal" class="modal" style="display: flex;">
-    <div class="modal-content" style="border: 1px solid var(--red);">
-      <h3>🔒 Security Check</h3>
-      <p id="securityMsg">Enter the shared secret password.</p>
-      <input type="password" id="secretPassInput" placeholder="Password" style="width: 80%; padding: 10px; margin: 10px 0;">
-      <button id="setSecretBtn" style="background: var(--red);">Set Key</button>
+  <input type="hidden" id="secure-room-id" value="<%= roomId %>">
+  
+  <div id="securityModal" class="modal">
+    <div class="modal-content">
+      <h3>Authentication</h3>
+      <input type="password" id="secretPassInput" placeholder="Enter Key" autocomplete="off">
+      <button id="setSecretBtn">Authenticate</button>
     </div>
   </div>
 
   <div id="startModal" class="modal" style="display: none;">
     <div class="modal-content">
-      <h3>Ready?</h3>
-      <button id="startCallButton">Join Call</button>
+      <h3>Channel Secure</h3>
+      <button id="startCallButton">Establish Link</button>
     </div>
   </div>
 
   <div id="inviteModal" class="modal" style="display: none;">
     <div class="modal-content">
       <span id="closeInviteX" class="close-modal-x">&times;</span>
-      <h3>Invite Her</h3>
+      <h3>Invite Partner</h3>
       <div class="link-container">
         <input type="text" id="inviteUrl" readonly>
         <button id="copyBtn">📋</button>
       </div>
-      <button id="closeInvite" style="background: #444; color:white; border:none; padding:8px 15px; border-radius:5px; cursor:pointer; margin-top: 15px;">Close</button>
+      <button id="closeInvite" class="modal-close-btn">Close</button>
     </div>
   </div>
 
   <div id="video-grid"></div>
 
   <div class="options-bar">
-    <div id="stopVideo" class="control-btn" title="Toggle Video">
-      🎥
-    </div>
-    <div id="muteButton" class="control-btn" title="Toggle Mic">
-      🎤
-    </div>
-    <div id="shareScreen" class="control-btn" title="Share Screen">
-      💻
-    </div>
-    <div id="disconnect" class="control-btn hangup-btn" title="Disconnect">
-      ❌
-    </div>
-    <div id="inviteButton" class="control-btn" title="Invite">
-      🔗
-    </div>
-    <div id="toggleChat" class="control-btn" title="Chat">
-      💬
-    </div>
+    <div id="stopVideo" class="control-btn">🎥</div>
+    <div id="muteButton" class="control-btn">🎤</div>
+    <div id="shareScreen" class="control-btn">💻</div>
+    <div id="disconnect" class="control-btn hangup-btn">❌</div>
+    <div id="inviteButton" class="control-btn">🔗</div>
+    <div id="toggleChat" class="control-btn">💬</div>
   </div>
 
   <div class="main_right" id="chatWindow" style="display: none;">
     <div class="main_header">
-      <h6>Secure Chat</h6>
-      <div id="closeChat" style="cursor: pointer;">✖</div>
+      <h6>Encrypted Channel</h6>
+      <div id="closeChat">✖</div>
     </div>
-
     <div class="main_chat_window" id="mainChatWindow">
       <ul class="messages" id="allMessages"></ul>
     </div>
-
     <div id="emojiPickerContainer" class="pickerContainer"></div>
-
     <div class="main_message_container">
       <button id="emojiBtn">😀</button>
-      <input id="chat_message" type="text" placeholder="Type message..." autocomplete="off">
+      <input id="chat_message" type="text" placeholder="Message..." autocomplete="off">
       <button id="sendMsgBtn">➤</button>
     </div>
   </div>
-
-  <script src="script.js"></script>
 </body>
 </html>
